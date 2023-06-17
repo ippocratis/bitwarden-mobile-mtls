@@ -554,7 +554,6 @@ namespace Bit.Droid.Services
          private bool HasPermission(string permission)
         {
             return ContextCompat.CheckSelfPermission(
-                CrossCurrentActivity.Current.Activity, permission) == Permission.Granted;
                 CrossCurrentActivity.Current.Activity, permission) == Android.Content.PM.Permission.Granted;
         }
 
