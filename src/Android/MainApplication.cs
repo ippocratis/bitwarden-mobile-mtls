@@ -160,6 +160,8 @@ namespace Bit.Droid
             var cryptoFunctionService = new PclCryptoFunctionService(cryptoPrimitiveService);
             var cryptoService = new CryptoService(stateService, cryptoFunctionService);
             var passwordRepromptService = new MobilePasswordRepromptService(platformUtilsService, cryptoService);
+            var iHttpMessageHandler = new AndroidHttpsClientHandler();
+            var certificateService = new CertificateService(deviceActionService, mobileStorageService, () => ServiceContainer.Resolve<IApiService>("apiService"));
 
             ServiceContainer.Register<ISynchronousStorageService>(preferencesStorage);
             ServiceContainer.Register<IBroadcasterService>("broadcasterService", broadcasterService);
@@ -181,6 +183,8 @@ namespace Bit.Droid
             ServiceContainer.Register<ICryptoFunctionService>("cryptoFunctionService", cryptoFunctionService);
             ServiceContainer.Register<ICryptoService>("cryptoService", cryptoService);
             ServiceContainer.Register<IPasswordRepromptService>("passwordRepromptService", passwordRepromptService);
+            ServiceContainer.Register<IHttpMessageHandler>("httpMessageHandler", iHttpMessageHandler);
+            ServiceContainer.Register<ICertificateService>("certificateService", certificateService);
             ServiceContainer.Register<IAvatarImageSourcePool>("avatarImageSourcePool", new AvatarImageSourcePool());
 
             // Push
@@ -213,6 +217,7 @@ namespace Bit.Droid
         private async Task BootstrapAsync()
         {
             await ServiceContainer.Resolve<IEnvironmentService>("environmentService").SetUrlsFromStorageAsync();
+            await ServiceContainer.Resolve<ICertificateService>("certificateService").SetCertificateContainerFromStorageAsync();
         }
 
         private void InitializeAppSetup()
