@@ -6,6 +6,8 @@ using Android.Content.PM;
 using Android.Nfc;
 using Android.OS;
 using Android.Provider;
+using Android.Runtime;
+using Android.Security;
 using Android.Text;
 using Android.Text.Method;
 using Android.Views;
@@ -15,6 +17,7 @@ using Bit.App.Abstractions;
 using Bit.App.Resources;
 using Bit.Core.Abstractions;
 using Bit.Core.Enums;
+using Bit.Core.Models;
 using Bit.Core.Utilities;
 using Bit.Droid.Utilities;
 using Plugin.CurrentActivity;
@@ -446,6 +449,82 @@ namespace Bit.Droid.Services
                 alertBuilder.Create().Show();
             }
         }
+        
+         private class ChoosePrivateKeyAliasCallback : Java.Lang.Object, IKeyChainAliasCallback
+        {
+            public Action<string> Success { get; set; }
+            public Action Failed { get; set; }
+
+            public void Alias(string alias)
+            {
+                if(string.IsNullOrEmpty(alias))
+                {
+                    this.Failed();
+                    return;
+                }
+
+                this.Success.Invoke(alias);
+            }
+        }
+
+        /// <summary>
+        /// Mustn't be called from main thread
+        /// </summary>
+        /// <param name="alias"></param>
+        /// <returns></returns>
+        public ICertificateContainer LoadCertificateFromAlias(string alias)
+        {
+            if(string.IsNullOrEmpty(alias))
+                return AndroidCertificateContainer.Empty;
+
+            var cert = KeyChain.GetCertificateChain(Application.Context, alias).FirstOrDefault();
+            var privateKeyRef = KeyChain.GetPrivateKey(Application.Context, alias);
+            var container = new AndroidCertificateContainer();
+            container.Certificate = cert;
+            container.Alias = alias;
+            container.PrivateKeyRef = privateKeyRef;
+
+            return container;
+        }
+
+        public Task<string> PickExistingCertificateForUserCredentials(string alias = null)
+        {
+            var result = new TaskCompletionSource<string>();
+            KeyChain.ChoosePrivateKeyAlias(
+                CrossCurrentActivity.Current.Activity,
+                new ChoosePrivateKeyAliasCallback
+                {
+                    Success = chosenAlias => result.SetResult(chosenAlias),
+                    Failed = () => result.SetResult(string.Empty)
+                },
+                new string[] { "RSA" },
+                null,
+                null,
+                -1,
+                alias
+            );
+            return result.Task;
+        }
+
+        /// <summary>
+        /// Must be executed on main thread
+        /// </summary>
+        /// <param name="cert"></param>
+        public void PromptInstallCertificate(byte[] cert)
+        {
+            var intent = KeyChain.CreateInstallIntent();
+            try
+            {
+                //TODO: check this is really a certificate
+                intent.PutExtra(KeyChain.ExtraPkcs12, cert);
+                intent.PutExtra(KeyChain.ExtraName, "Your company's Bitwarden Cert");
+                CrossCurrentActivity.Current.Activity.StartActivityForResult(intent, Constants.InstallCertificateRequestCode);
+            }
+            catch(Exception e)
+            {
+                System.Diagnostics.Debug.WriteLine("No certificate selected", e.Message);
+            }
+        }
 
         public long GetActiveTime()
         {
@@ -470,6 +549,13 @@ namespace Bit.Droid.Services
         public bool SupportsFido2()
         {
             return true;
+        }
+        
+         private bool HasPermission(string permission)
+        {
+            return ContextCompat.CheckSelfPermission(
+                CrossCurrentActivity.Current.Activity, permission) == Permission.Granted;
+                CrossCurrentActivity.Current.Activity, permission) == Android.Content.PM.Permission.Granted;
         }
 
         private Intent RateIntentForUrl(string url, Activity activity)
