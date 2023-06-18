@@ -56,6 +56,7 @@
         public const int SelectFileRequestCode = 42;
         public const int SelectFilePermissionRequestCode = 43;
         public const int SaveFileRequestCode = 44;
+        public const int InstallCertificateRequestCode = 45;
         public const int TotpDefaultTimer = 30;
         public const int PasswordlessNotificationTimeoutInMinutes = 15;
         public const int Pbkdf2Iterations = 600000;
@@ -108,6 +109,7 @@
         public static string PreviousPageKey(string userId) => $"previousPage_{userId}";
         public static string PasswordRepromptAutofillKey(string userId) => $"passwordRepromptAutofillKey_{userId}";
         public static string PasswordVerifiedAutofillKey(string userId) => $"passwordVerifiedAutofillKey_{userId}";
+        public static string TlsAuthCertificateAliasKey = "tlsAuthCertificateAlias";
         public static string SettingsKey(string userId) => $"settings_{userId}";
         public static string UsesKeyConnectorKey(string userId) => $"usesKeyConnector_{userId}";
         public static string ProtectedPinKey(string userId) => $"protectedPin_{userId}";
