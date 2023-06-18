@@ -498,6 +498,7 @@ namespace Bit.App.Utilities
         public static async Task LogOutAsync(string userId, bool userInitiated = false)
         {
             var stateService = ServiceContainer.Resolve<IStateService>("stateService");
+            var certificateService = ServiceContainer.Resolve<ICertificateService>("certificateService");
             var vaultTimeoutService = ServiceContainer.Resolve<IVaultTimeoutService>("vaultTimeoutService");
 
             var isActiveAccount = await stateService.IsActiveAccountAsync(userId);
