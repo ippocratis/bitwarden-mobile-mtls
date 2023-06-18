@@ -4,6 +4,7 @@ using Bit.App.Models;
 using Bit.App.Utilities;
 using Bit.Core;
 using Bit.Core.Abstractions;
+using Bit.Core.Models.Domain;
 using Bit.Core.Services;
 using Bit.Core.Utilities;
 using Xamarin.CommunityToolkit.ObjectModel;
@@ -24,6 +25,7 @@ namespace Bit.App.Pages
         public LoginPage(string email = null, AppOptions appOptions = null)
         {
             _appOptions = appOptions;
+            _broadcasterService = ServiceContainer.Resolve<IBroadcasterService>("broadcasterService");
             InitializeComponent();
             _broadcasterService = ServiceContainer.Resolve<IBroadcasterService>();
             _vm = BindingContext as LoginPageViewModel;
@@ -73,13 +75,26 @@ namespace Bit.App.Pages
         protected override async void OnAppearing()
         {
             base.OnAppearing();
-            _broadcasterService.Subscribe(nameof(LoginPage), message =>
+            _broadcasterService.Subscribe(nameof(LoginPage), async (message) =>
             {
-                if (message.Command == Constants.ClearSensitiveFields)
+                if(message.Command == "selectFileResult")
                 {
-                    Device.BeginInvokeOnMainThread(_vm.ResetPasswordField);
+                    FileSelected_InstallCertificate(message);
+                }
+                else if(message.Command == "installCertificateResult")
+                {
+                    if(await _vm.PickCertificate())
+                        await _vm.LoadCertificateAndLogin();
                 }
             });
+
+            //_broadcasterService.Subscribe(nameof(LoginPage), message =>
+            //{
+            //    if (message.Command == Constants.ClearSensitiveFields)
+            //    {
+            //        Device.BeginInvokeOnMainThread(_vm.ResetPasswordField);
+            //    }
+            //});
             _mainContent.Content = _mainLayout;
             _accountAvatar?.OnAppearing();
 
@@ -97,6 +112,17 @@ namespace Bit.App.Pages
             {
                 ToolbarItems.Add(_removeAccount);
             }
+        }
+        
+         private void FileSelected_InstallCertificate(Message message)
+        {
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                var data = message.Data as Tuple<byte[], string>;
+                var fileData = data.Item1;
+                var fileName = data.Item2;
+                _vm.PromptInstallCertificate(fileData);
+            });
         }
 
         protected override bool OnBackButtonPressed()
