@@ -12,11 +12,13 @@ namespace Bit.App.Pages
     public class EnvironmentPageViewModel : BaseViewModel
     {
         private readonly IEnvironmentService _environmentService;
+        private readonly ICertificateService _certificateService;
         readonly LazyResolve<ILogger> _logger = new LazyResolve<ILogger>("logger");
 
         public EnvironmentPageViewModel()
         {
             _environmentService = ServiceContainer.Resolve<IEnvironmentService>("environmentService");
+            _certificateService = ServiceContainer.Resolve<ICertificateService>("certificateService");
 
             PageTitle = AppResources.Settings;
             BaseUrl = _environmentService.BaseUrl == EnvironmentUrlData.DefaultEU.Base || EnvironmentUrlData.DefaultUS.Base == _environmentService.BaseUrl ?
@@ -56,6 +58,7 @@ namespace Bit.App.Pages
                 Icons = IconsUrl,
                 Notifications = NotificationsUrls
             });
+            await _certificateService.ResetSelectedCertificate();
 
             // re-set urls since service can change them, ex: prefixing https://
             BaseUrl = resUrls.Base;
