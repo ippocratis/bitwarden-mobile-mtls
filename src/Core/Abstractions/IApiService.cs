@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Bit.Core.Enums;
+﻿using Bit.Core.Models;
 using Bit.Core.Models.Domain;
 using Bit.Core.Models.Request;
 using Bit.Core.Models.Response;
@@ -49,6 +50,7 @@ namespace Bit.Core.Abstractions
         Task<TResponse> SendAsync<TRequest, TResponse>(HttpMethod method, string path,
             TRequest body, bool authed, bool hasResponse, Action<HttpRequestMessage> alterRequest, bool logoutOnUnauthorized = true);
         void SetUrls(EnvironmentUrls urls);
+        void SetCertificateContainer(ICertificateContainer certificateContainer);
         [Obsolete("Mar 25 2021: This method has been deprecated in favor of direct uploads. This method still exists for backward compatibility with old server versions.")]
         Task<CipherResponse> PostCipherAttachmentLegacyAsync(string id, MultipartFormDataContent data);
         Task<AttachmentUploadDataResponse> PostCipherAttachmentAsync(string id, AttachmentRequest request);
