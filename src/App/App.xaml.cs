@@ -35,6 +35,7 @@ namespace Bit.App
         private readonly ISyncService _syncService;
         private readonly IAuthService _authService;
         private readonly IDeviceActionService _deviceActionService;
+        private readonly ICertificateService _certificateService;
         private readonly IFileService _fileService;
         private readonly IAccountsManager _accountsManager;
         private readonly IPushNotificationService _pushNotificationService;
@@ -59,6 +60,7 @@ namespace Bit.App
             _syncService = ServiceContainer.Resolve<ISyncService>("syncService");
             _authService = ServiceContainer.Resolve<IAuthService>("authService");
             _deviceActionService = ServiceContainer.Resolve<IDeviceActionService>("deviceActionService");
+            _certificateService = ServiceContainer.Resolve<ICertificateService>("certificateService");
             _fileService = ServiceContainer.Resolve<IFileService>();
             _accountsManager = ServiceContainer.Resolve<IAccountsManager>("accountsManager");
             _pushNotificationService = ServiceContainer.Resolve<IPushNotificationService>();
