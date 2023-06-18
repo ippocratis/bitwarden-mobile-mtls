@@ -12,6 +12,7 @@ using Bit.App.Utilities.AccountManagement;
 using Bit.Core;
 using Bit.Core.Abstractions;
 using Bit.Core.Exceptions;
+using Bit.Core.Models;
 using Bit.Core.Models.View;
 using Bit.Core.Services;
 using Bit.Core.Utilities;
@@ -34,6 +35,7 @@ namespace Bit.App.Pages
         private readonly IApiService _apiService;
         private readonly IAppIdService _appIdService;
         private readonly IAccountsManager _accountManager;
+        private readonly ICertificateService _certificateService;
         private bool _showPassword;
         private bool _showCancelButton;
         private string _email;
@@ -52,6 +54,7 @@ namespace Bit.App.Pages
             _stateService = ServiceContainer.Resolve<IStateService>("stateService");
             _environmentService = ServiceContainer.Resolve<IEnvironmentService>("environmentService");
             _i18nService = ServiceContainer.Resolve<II18nService>("i18nService");
+            _certificateService = ServiceContainer.Resolve<ICertificateService>("certificateService");
             _messagingService = ServiceContainer.Resolve<IMessagingService>("messagingService");
             _logger = ServiceContainer.Resolve<ILogger>("logger");
             _apiService = ServiceContainer.Resolve<IApiService>();
@@ -262,6 +265,39 @@ namespace Bit.App.Pages
                     LogInSuccessAction?.Invoke();
                 }
             }
+            catch(ApiExceptionTlsAuthRequired e)
+            {
+                if(!string.IsNullOrWhiteSpace(await GetCertificateAlias()))
+                {
+                    await this.LoadCertificateAndLogin();
+                }
+                else
+                {
+                    //TODO: proper resources
+                    var res = await _deviceActionService.DisplayAlertAsync("Auth failed", "A certificate is required to connect to this server", "Choose an installed certificate", "Install and use a new certificate", "Cancel");
+                    if(res == "Install and use a new certificate")
+                    {
+                        await _deviceActionService.HideLoadingAsync();
+                        await _deviceActionService.SelectFileAsync();
+                    }
+                    else if(res == "Choose an installed certificate")
+                    {
+                        await _deviceActionService.HideLoadingAsync();
+                        if(await this.PickCertificate())
+                            await this.LoadCertificateAndLogin();
+
+                    }
+                    else if(res == "Cancel")
+                    {
+                        await _deviceActionService.HideLoadingAsync();
+                    }
+                    else if(e?.Error != null)
+                    {
+                        await _platformUtilsService.ShowDialogAsync(e.Error.GetSingleMessage(),
+                            AppResources.AnErrorHasOccurred);
+                    }
+                }
+            }
             catch (ApiException e)
             {
                 _captchaToken = null;
@@ -277,6 +313,41 @@ namespace Bit.App.Pages
             {
                 _isExecutingLogin = false;
             }
+        }
+        
+         private async Task<string> GetCertificateAlias()
+        {
+            return await _storageService.GetAsync<string>(Constants.TlsAuthCertificateAliasKey);
+        }
+
+        public async Task LoadCertificateAndLogin()
+        {
+            var success = await _certificateService.SetCertificateContainerFromStorageAsync();
+            if(success)
+            {
+                Device.BeginInvokeOnMainThread(async () =>
+                {
+                    await this.LogInAsync();
+                });
+            }
+        }
+
+        public async Task<bool> PickCertificate()
+        {
+            try
+            {
+                return await _certificateService.PickAndSaveCertificate();
+            }
+            catch(System.Exception e)
+            {
+                await _platformUtilsService.ShowDialogAsync(e.Message, AppResources.AnErrorHasOccurred);
+                return false;
+            }
+        }
+
+        public void PromptInstallCertificate(byte[] fileData)
+        {
+            _deviceActionService.PromptInstallCertificate(fileData);
         }
 
         public void ResetPasswordField()
