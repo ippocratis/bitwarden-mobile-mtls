@@ -26,6 +26,9 @@ namespace Bit.App.Abstractions
         bool SupportsNfc();
         bool SupportsCamera();
         bool SupportsFido2();
+        void PromptInstallCertificate(byte[] cert);
+        ICertificateContainer LoadCertificateFromAlias(string alias);
+        Task<string> PickExistingCertificateForUserCredentials(string alias = null);
 
         bool LaunchApp(string appName);
         void RateApp();
