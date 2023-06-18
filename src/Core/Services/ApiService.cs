@@ -5,6 +5,9 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Bit.Core.Utilities;
+using System.Security.Authentication;
+using Bit.Core.Models;
 using Bit.Core.Abstractions;
 using Bit.Core.Enums;
 using Bit.Core.Exceptions;
@@ -24,7 +27,8 @@ namespace Bit.Core.Services
         {
             ContractResolver = new CamelCasePropertyNamesContractResolver()
         };
-        private readonly HttpClient _httpClient = new HttpClient();
+        private readonly IHttpMessageHandler _httpClientHandler;
+        private readonly HttpClient _httpClient;
         private readonly ITokenService _tokenService;
         private readonly IPlatformUtilsService _platformUtilsService;
         private readonly Func<Tuple<string, bool, bool>, Task> _logoutCallbackAsync;
@@ -35,6 +39,9 @@ namespace Bit.Core.Services
             Func<Tuple<string, bool, bool>, Task> logoutCallbackAsync,
             string customUserAgent = null)
         {
+            _httpClientHandler = ServiceContainer.Resolve<IHttpMessageHandler>("httpMessageHandler");
+            _httpClient = new HttpClient(_httpClientHandler.AsClientHandler());
+            
             _tokenService = tokenService;
             _platformUtilsService = platformUtilsService;
             _logoutCallbackAsync = logoutCallbackAsync;
@@ -82,6 +89,11 @@ namespace Bit.Core.Services
                 EventsBaseUrl = "https://events.bitwarden.com";
             }
         }
+        
+         public void SetCertificateContainer(ICertificateContainer certificateContainer)
+        {
+            _httpClientHandler.UseCertificateContainer(certificateContainer);
+        }
 
         #region Auth APIs
 
@@ -102,7 +114,7 @@ namespace Bit.Core.Services
             {
                 response = await _httpClient.SendAsync(requestMessage);
             }
-            catch (Exception e)
+            catch(Exception e)
             {
                 throw new ApiException(HandleWebError(e));
             }
@@ -422,7 +434,11 @@ namespace Bit.Core.Services
                 {
                     response = await _httpClient.SendAsync(requestMessage);
                 }
-                catch (Exception e)
+                catch(HttpRequestException e) when(e.InnerException is AuthenticationException)
+                {
+                    throw new ApiExceptionTlsAuthRequired(HandleWebError(e));
+                }
+                catch(Exception e)
                 {
                     throw new ApiException(HandleWebError(e));
                 }
@@ -500,7 +516,11 @@ namespace Bit.Core.Services
                 {
                     response = await _httpClient.SendAsync(requestMessage);
                 }
-                catch (Exception e)
+                catch(HttpRequestException e) when(e.InnerException is AuthenticationException)
+            {
+                throw new ApiExceptionTlsAuthRequired(HandleWebError(e));
+            }
+            catch(Exception e)
                 {
                     throw new ApiException(HandleWebError(e));
                 }
