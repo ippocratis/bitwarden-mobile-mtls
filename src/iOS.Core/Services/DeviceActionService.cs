@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Bit.App.Abstractions;
 using Bit.App.Resources;
 using Bit.Core.Enums;
+using Bit.Core.Models;
 using Bit.iOS.Core.Utilities;
 using Bit.iOS.Core.Views;
 using CoreGraphics;
@@ -352,6 +353,21 @@ namespace Bit.iOS.Core.Services
         }
 
         public void OpenAccessibilityOverlayPermissionSettings()
+        {
+            throw new NotImplementedException();
+        }
+        
+        public void PromptInstallCertificate(byte[] cert)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ICertificateContainer LoadCertificateFromAlias(string alias)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<string> PickExistingCertificateForUserCredentials(string alias = null)
         {
             throw new NotImplementedException();
         }
